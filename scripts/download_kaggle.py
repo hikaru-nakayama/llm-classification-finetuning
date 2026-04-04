@@ -4,7 +4,7 @@ from pathlib import Path
 
 COMPETITION = "llm-classification-finetuning"
 DEFAULT_DOWNLOAD_DIR = "/content/kaggle_data"
-DEFAULT_RAW_DIR = "/content/drive/MyDrive/lm-classification-finetuning/data/raw"
+DEFAULT_RAW_DIR = "/content/drive/MyDrive/llm-classification-finetuning/data/raw"
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", DEFAULT_DOWNLOAD_DIR))
 RAW_DIR = Path(os.getenv("RAW_DIR", DEFAULT_RAW_DIR))
