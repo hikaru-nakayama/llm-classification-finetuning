@@ -1,2 +1,3 @@
-transformers
-pandas
+# This repository uses uv for dependency management.
+# Install dependencies with:
+#   uv sync --dev

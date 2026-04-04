@@ -1,0 +1,21 @@
+[project]
+name = "llm-classification-finetuning"
+version = "0.1.0"
+description = "Minimal setup for SFT + QLoRA experiments on the Kaggle LLM classification dataset."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas",
+    "transformers",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel",
+    "jupyter",
+    "pytest",
+]
+
+[tool.uv]
+package = false
