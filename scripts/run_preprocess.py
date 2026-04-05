@@ -12,7 +12,7 @@ EVAL_OUTPUT_PATH = PROCESSED_DIR / "preprcessed_eval.parquet"
 TRAIN_RATIO = 0.8
 RANDOM_SEED = 42
 MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
-MAX_TRAIN_TOKENS = 4096
+MAX_TRAIN_TOKENS = 2048
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 if tokenizer.pad_token is None:
@@ -60,11 +60,13 @@ train_df = processed_df.iloc[:train_size].copy()
 eval_df = processed_df.iloc[train_size:].copy()
 
 train_df["token_length"] = train_df["text"].apply(
-    lambda text: len(tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"])
+    lambda text: len(
+        tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"]
+    )
 )
-train_df = train_df.loc[train_df["token_length"] <= MAX_TRAIN_TOKENS, ["text", "label"]].reset_index(
-    drop=True
-)
+train_df = train_df.loc[
+    train_df["token_length"] <= MAX_TRAIN_TOKENS, ["text", "label"]
+].reset_index(drop=True)
 
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 train_df.to_parquet(TRAIN_OUTPUT_PATH, index=False)

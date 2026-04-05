@@ -19,7 +19,8 @@ import pandas as pd
 import os
 
 model_name = "Qwen/Qwen2.5-7B-Instruct"
-DEFAULT_MAX_LENGTH = 4096
+DEFAULT_MAX_LENGTH = 2048
+DEFAULT_SEED = 42
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 if tokenizer.pad_token is None:
@@ -59,7 +60,8 @@ model = get_peft_model(model, peft_config)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-INPUT_PATH = REPO_ROOT / "data" / "processed" / "preprcessed_train.parquet"
+TRAIN_INPUT_PATH = REPO_ROOT / "data" / "processed" / "preprcessed_train.parquet"
+EVAL_INPUT_PATH = REPO_ROOT / "data" / "processed" / "preprcessed_eval.parquet"
 DEFAULT_DRIVE_OUTPUT_ROOT = Path(
     "/content/drive/MyDrive/llm-classification-finetuning/output"
 )
@@ -78,10 +80,13 @@ OUTPUT_DIR = resolve_output_dir()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 max_length = int(os.environ.get("TRAIN_MAX_LENGTH", DEFAULT_MAX_LENGTH))
+seed = int(os.environ.get("TRAIN_SEED", DEFAULT_SEED))
 
-df = pd.read_parquet(INPUT_PATH)
+train_df = pd.read_parquet(TRAIN_INPUT_PATH)
+eval_df = pd.read_parquet(EVAL_INPUT_PATH)
 
-train_dataset = Dataset.from_pandas(df[["text", "label"]])
+train_dataset = Dataset.from_pandas(train_df[["text", "label"]], preserve_index=False)
+eval_dataset = Dataset.from_pandas(eval_df[["text", "label"]], preserve_index=False)
 
 
 def tokenize_fn(batch):
@@ -99,6 +104,12 @@ tokenized_train = train_dataset.map(
     remove_columns=["text"],
 )
 tokenized_train = tokenized_train.rename_column("label", "labels")
+tokenized_eval = eval_dataset.map(
+    tokenize_fn,
+    batched=True,
+    remove_columns=["text"],
+)
+tokenized_eval = tokenized_eval.rename_column("label", "labels")
 
 training_args = TrainingArguments(
     output_dir=str(OUTPUT_DIR),
@@ -108,8 +119,10 @@ training_args = TrainingArguments(
     num_train_epochs=1,
     logging_steps=10,
     save_steps=200,
+    eval_strategy="epoch",
     bf16=True,
     report_to="none",
+    seed=seed,
 )
 
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
@@ -118,6 +131,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_train,
+    eval_dataset=tokenized_eval,
     processing_class=tokenizer,
     data_collator=data_collator,
 )
