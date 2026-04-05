@@ -1,10 +1,16 @@
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.preprocess import build_input_text, randomize_ab_order
+
 TRAIN_PATH = REPO_ROOT / "data" / "raw" / "train.csv"
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 TRAIN_OUTPUT_PATH = PROCESSED_DIR / "preprcessed_train.parquet"
@@ -24,39 +30,8 @@ label_cols = ["winner_model_a", "winner_model_b", "winner_tie"]
 df["label"] = np.argmax(df[label_cols].to_numpy(), axis=1)
 
 
-def build_input_text(prompt: str, response_a: str, response_b: str) -> str:
-    return f"""You are a judge that predicts which response a human would prefer.
-
-[Prompt]
-{prompt}
-
-[Response A]
-{response_a}
-
-[Response B]
-{response_b}
-
-[Decision]
-Choose exactly one label:
-0 = A is preferred
-1 = B is preferred
-2 = Tie
-
-Label:
-"""
-
-
-df["text"] = df.apply(
-    lambda row: build_input_text(
-        row["prompt"],
-        row["response_a"],
-        row["response_b"],
-    ),
-    axis=1,
-)
-
 processed_df = (
-    df[["text", "label"]]
+    df[["prompt", "response_a", "response_b", "label"]]
     .sample(
         frac=1.0,
         random_state=RANDOM_SEED,
@@ -67,6 +42,25 @@ train_size = int(len(processed_df) * TRAIN_RATIO)
 train_df = processed_df.iloc[:train_size].copy()
 eval_df = processed_df.iloc[train_size:].copy()
 
+train_df = randomize_ab_order(train_df, random_seed=RANDOM_SEED)
+
+train_df["text"] = train_df.apply(
+    lambda row: build_input_text(
+        row["prompt"],
+        row["response_a"],
+        row["response_b"],
+    ),
+    axis=1,
+)
+eval_df["text"] = eval_df.apply(
+    lambda row: build_input_text(
+        row["prompt"],
+        row["response_a"],
+        row["response_b"],
+    ),
+    axis=1,
+)
+
 train_df["token_length"] = train_df["text"].apply(
     lambda text: len(
         tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"]
@@ -75,6 +69,7 @@ train_df["token_length"] = train_df["text"].apply(
 train_df = train_df.loc[
     train_df["token_length"] <= MAX_TRAIN_TOKENS, ["text", "label"]
 ].reset_index(drop=True)
+eval_df = eval_df[["text", "label"]].reset_index(drop=True)
 
 print(train_df["label"].dtype)
 print(train_df["label"].value_counts())
