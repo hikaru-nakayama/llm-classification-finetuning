@@ -33,7 +33,7 @@ uv run python scripts/run_eval.py
 ## 学習フロー
 
 1. raw データを Drive に置く
-2. preprocess して processed/train.jsonl を作る
+2. preprocess して data/processed/preprcessed_train.parquet を作る
 3. run_train.py で学習
 4. adapter を Drive に保存
 5. run_eval.py で動作確認
