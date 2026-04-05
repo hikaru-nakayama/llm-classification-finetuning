@@ -35,6 +35,14 @@ def build_input_text(prompt: str, response_a: str, response_b: str) -> str:
 
 [Response B]
 {response_b}
+
+[Decision]
+Choose exactly one label:
+0 = A is preferred
+1 = B is preferred
+2 = Tie
+
+Label:
 """
 
 
@@ -67,6 +75,10 @@ train_df["token_length"] = train_df["text"].apply(
 train_df = train_df.loc[
     train_df["token_length"] <= MAX_TRAIN_TOKENS, ["text", "label"]
 ].reset_index(drop=True)
+
+print(train_df["label"].dtype)
+print(train_df["label"].value_counts())
+print(sorted(train_df["label"].unique()))
 
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 train_df.to_parquet(TRAIN_OUTPUT_PATH, index=False)
