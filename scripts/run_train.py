@@ -92,4 +92,4 @@ trainer = Trainer(
     tokenizer=tokenizer,
 )
 
-# trainer.train()
+trainer.train()
