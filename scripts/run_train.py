@@ -72,7 +72,12 @@ def tokenize_fn(batch):
     )
 
 
-tokenized_train = train_dataset.map(tokenize_fn, batched=True)
+tokenized_train = train_dataset.map(
+    tokenize_fn,
+    batched=True,
+    remove_columns=["text"],
+)
+tokenized_train = tokenized_train.rename_column("label", "labels")
 
 training_args = TrainingArguments(
     output_dir="./outputs/qwen25_7b_cls",
@@ -91,7 +96,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
+    train_dataset=tokenized_train,
     processing_class=tokenizer,
     data_collator=data_collator,
 )
