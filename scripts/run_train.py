@@ -4,6 +4,7 @@ from transformers import (
     BitsAndBytesConfig,
     TrainingArguments,
     Trainer,
+    DataCollatorWithPadding,
 )
 from peft import (
     LoraConfig,
@@ -85,11 +86,14 @@ training_args = TrainingArguments(
     report_to="none",
 )
 
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_train,
-    tokenizer=tokenizer,
+    train_dataset=train_dataset,
+    processing_class=tokenizer,
+    data_collator=data_collator,
 )
 
 trainer.train()
