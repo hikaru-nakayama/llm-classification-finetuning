@@ -35,10 +35,14 @@ uv run python scripts/run_eval.py
 1. raw データを Drive に置く
 2. preprocess して data/processed/preprcessed_train.parquet を作る
 3. run_train.py で学習
-4. adapter を Drive に保存
+4. 学習済み adapter を Drive に保存
 5. run_eval.py で動作確認
 
 ## 保存先
 
 - data: /content/drive/MyDrive/llm_ft_workspace/data
-- outputs: /content/drive/MyDrive/llm_ft_workspace/outputs
+- output: /content/drive/MyDrive/llm-classification-finetuning/output
+
+`scripts/run_train.py` は Colab で `/content/drive/MyDrive/llm-classification-finetuning/output` が存在すれば
+自動で `qwen25_7b_cls` をその配下に保存する。ローカルでは `./outputs/qwen25_7b_cls` を使う。
+保存先を明示したい場合は `TRAIN_OUTPUT_ROOT` 環境変数で上書きできる。

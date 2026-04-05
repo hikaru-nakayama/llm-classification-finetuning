@@ -16,6 +16,7 @@ import torch
 from datasets import Dataset
 from pathlib import Path
 import pandas as pd
+import os
 
 model_name = "Qwen/Qwen2.5-7B-Instruct"
 
@@ -57,6 +58,20 @@ model = get_peft_model(model, peft_config)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INPUT_PATH = REPO_ROOT / "data" / "processed" / "preprcessed_train.parquet"
+DEFAULT_DRIVE_OUTPUT_ROOT = Path("/content/drive/MyDrive/llm-classification-finetuning/output")
+
+
+def resolve_output_dir() -> Path:
+    output_root = os.environ.get("TRAIN_OUTPUT_ROOT")
+    if output_root:
+        return Path(output_root).expanduser() / "qwen25_7b_cls"
+    if DEFAULT_DRIVE_OUTPUT_ROOT.exists():
+        return DEFAULT_DRIVE_OUTPUT_ROOT / "qwen25_7b_cls"
+    return REPO_ROOT / "outputs" / "qwen25_7b_cls"
+
+
+OUTPUT_DIR = resolve_output_dir()
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 df = pd.read_parquet(INPUT_PATH)
 
@@ -80,7 +95,7 @@ tokenized_train = train_dataset.map(
 tokenized_train = tokenized_train.rename_column("label", "labels")
 
 training_args = TrainingArguments(
-    output_dir="./outputs/qwen25_7b_cls",
+    output_dir=str(OUTPUT_DIR),
     per_device_train_batch_size=1,
     gradient_accumulation_steps=8,
     learning_rate=2e-4,
@@ -102,3 +117,6 @@ trainer = Trainer(
 )
 
 trainer.train()
+trainer.save_model()
+tokenizer.save_pretrained(OUTPUT_DIR)
+print(f"saved artifacts to {OUTPUT_DIR}")
