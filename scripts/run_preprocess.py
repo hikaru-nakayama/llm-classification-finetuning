@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from transformers import AutoTokenizer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_PATH = REPO_ROOT / "data" / "raw" / "train.csv"
@@ -10,6 +11,12 @@ TRAIN_OUTPUT_PATH = PROCESSED_DIR / "preprcessed_train.parquet"
 EVAL_OUTPUT_PATH = PROCESSED_DIR / "preprcessed_eval.parquet"
 TRAIN_RATIO = 0.8
 RANDOM_SEED = 42
+MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
+MAX_TRAIN_TOKENS = 4096
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 
 df = pd.read_csv(TRAIN_PATH)
 
@@ -52,9 +59,17 @@ train_size = int(len(processed_df) * TRAIN_RATIO)
 train_df = processed_df.iloc[:train_size].copy()
 eval_df = processed_df.iloc[train_size:].copy()
 
+train_df["token_length"] = train_df["text"].apply(
+    lambda text: len(tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"])
+)
+train_df = train_df.loc[train_df["token_length"] <= MAX_TRAIN_TOKENS, ["text", "label"]].reset_index(
+    drop=True
+)
+
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 train_df.to_parquet(TRAIN_OUTPUT_PATH, index=False)
 eval_df.to_parquet(EVAL_OUTPUT_PATH, index=False)
 
 print(f"saved train to: {TRAIN_OUTPUT_PATH} ({len(train_df)} rows)")
 print(f"saved eval to: {EVAL_OUTPUT_PATH} ({len(eval_df)} rows)")
+print(f"filtered train to <= {MAX_TRAIN_TOKENS} tokens")

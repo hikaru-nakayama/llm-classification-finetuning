@@ -19,6 +19,7 @@ import pandas as pd
 import os
 
 model_name = "Qwen/Qwen2.5-7B-Instruct"
+DEFAULT_MAX_LENGTH = 4096
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 if tokenizer.pad_token is None:
@@ -75,6 +76,8 @@ def resolve_output_dir() -> Path:
 OUTPUT_DIR = resolve_output_dir()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+max_length = int(os.environ.get("TRAIN_MAX_LENGTH", DEFAULT_MAX_LENGTH))
+
 df = pd.read_parquet(INPUT_PATH)
 
 train_dataset = Dataset.from_pandas(df[["text", "label"]])
@@ -84,7 +87,7 @@ def tokenize_fn(batch):
     return tokenizer(
         batch["text"],
         truncation=True,
-        max_length=2048,
+        max_length=max_length,
         padding=False,
     )
 
@@ -118,14 +121,8 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
-print(tokenized_train[0]["labels"], type(tokenized_train[0]["labels"]))
-
-print(tokenized_train.column_names)
-print(tokenized_train[0])
-print(model.config.num_labels)
-print(model.config.problem_type)
-
 trainer.train()
 trainer.save_model()
 tokenizer.save_pretrained(OUTPUT_DIR)
 print(f"saved artifacts to {OUTPUT_DIR}")
+print(f"tokenization max_length: {max_length}")
