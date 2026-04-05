@@ -58,7 +58,9 @@ model = get_peft_model(model, peft_config)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INPUT_PATH = REPO_ROOT / "data" / "processed" / "preprcessed_train.parquet"
-DEFAULT_DRIVE_OUTPUT_ROOT = Path("/content/drive/MyDrive/llm-classification-finetuning/output")
+DEFAULT_DRIVE_OUTPUT_ROOT = Path(
+    "/content/drive/MyDrive/llm-classification-finetuning/output"
+)
 
 
 def resolve_output_dir() -> Path:
@@ -115,6 +117,13 @@ trainer = Trainer(
     processing_class=tokenizer,
     data_collator=data_collator,
 )
+
+print(tokenized_train[0]["labels"], type(tokenized_train[0]["labels"]))
+
+print(tokenized_train.column_names)
+print(tokenized_train[0])
+print(model.config.num_labels)
+print(model.config.problem_type)
 
 trainer.train()
 trainer.save_model()
