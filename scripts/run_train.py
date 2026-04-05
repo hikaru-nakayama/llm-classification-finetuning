@@ -40,6 +40,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
     trust_remote_code=True,
 )
 
+model.config.problem_type = "single_label_classification"
 model.config.pad_token_id = tokenizer.pad_token_id
 
 model = prepare_model_for_kbit_training(model)
@@ -103,7 +104,7 @@ training_args = TrainingArguments(
     output_dir=str(OUTPUT_DIR),
     per_device_train_batch_size=1,
     gradient_accumulation_steps=8,
-    learning_rate=2e-4,
+    learning_rate=2e-5,
     num_train_epochs=1,
     logging_steps=10,
     save_steps=200,
